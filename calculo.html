@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css')}}">
+    <title>Manipular Datos de Excel en el Navegador</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+    <style>
+    body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 50px;
+        background-color: #f9e1cd;
+    }
+    
+    input {
+        margin: 10px;
+    }
+    
+    button {
+        padding: 10px 20px;
+        background-color: #007BFF;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    .center {
+        margin: 0 auto;
+        text-align: center;
+    }
+    
+    table {
+        margin: 0 auto;
+        background-color: whitesmoke;
+    }
+ 
+    .spacer {
+        height: 20px;
+        top: 20px; /* Puedes ajustar el valor según sea necesario */
+    }
+    
+    #output {
+        margin-top: 20px; /* Ajusta el valor según sea necesario */
+    }
+    
+    </style>
+</head>
+<body>
+
+
+    <input type="file" id="fileInput">
+    <button onclick="cargarArchivo()">Cargar Archivo</button>
+    <div id="output" class="center"></div>
+
+    <script>
+        function cargarArchivo() {
+            var fileInput = document.getElementById('fileInput');
+            var output = document.getElementById('output');
+            
+            var file = fileInput.files[0];
+            var reader = new FileReader();
+        
+            reader.onload = function(e) {
+                var data = e.target.result;
+                var workbook = XLSX.read(data, {type: 'binary'});
+                var sheet_name_list = workbook.SheetNames;
+                var xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]], {header: 1});
+        
+                // Eliminar filas vacías al final
+                while (xlData.length > 0 && xlData[xlData.length - 1].every(cell => cell === undefined || cell === null || cell === "")) {
+                    xlData.pop();
+                }
+        
+                // Eliminar columnas vacías al final
+                if (xlData.length > 0) {
+                    var maxCols = xlData[0].length;
+                    for (var j = maxCols - 1; j >= 0; j--) {
+                        if (xlData.every(row => row[j] === undefined || row[j] === null || row[j] === "")) {
+                            xlData.forEach(row => row.splice(j, 1));
+                        } else {
+                            break;
+                        }
+                    }
+                }
+        
+                var table = '<table border="1">';
+                for(var i=0; i<xlData.length; i++) {
+                    table += '<tr>';
+                    for(var j=0; j<xlData[i].length; j++) {
+                        table += '<td>' + xlData[i][j] + '</td>';
+                    }
+                    table += '</tr>';
+                }
+                table += '</table>';
+                
+                output.innerHTML = table;
+            };
+        
+            reader.readAsBinaryString(file);
+        }
+        
+    
+    </script>
+
+    <form action="/calculos" method="post" enctype="multipart/form-data">
+        <input type="file" name="archivo" accept=".xlsx, .xls">
+        <input type="submit" value="Calcular">
+    </form>
+    
+</body>
+</html>
